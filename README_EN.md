@@ -90,38 +90,31 @@ If your local listener is pure SOCKS5, use an HTTP/Mixed entry provided by the p
 
 ## 4. Configure the proxy address and port
 
-Copy the example configuration:
-
-```powershell
-Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1
-```
-
-Edit `proxy-config.psd1`:
+This fork commits a working `proxy-config.psd1` directly, so a fresh clone already has it:
 
 ```powershell
 @{
-    ProxyUrl = 'http://127.0.0.1:10808'
+    ProxyUrl = 'http://127.0.0.1:7897'
     NoProxy = 'localhost,127.0.0.1,::1'
 }
 ```
 
-Only `ProxyUrl` normally needs to change. A local unauthenticated listener is recommended. Do not commit proxy credentials or tokens to GitHub.
+Only `ProxyUrl` normally needs to change when moving to another machine. A local unauthenticated listener is recommended. Do not commit proxy credentials or tokens to GitHub.
 
-If `proxy-config.psd1` is absent, the launcher uses `http://127.0.0.1:10808` as its default.
+`proxy-config.example.psd1` is kept for reference only. **Do not run `Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1`** — it overwrites the committed real port with the example value. If `proxy-config.psd1` is absent, the launcher silently falls back to `http://127.0.0.1:10808`.
 
 ## 5. Install the project
 
-Download a Release archive or clone the repository:
+No Release archive is published; clone the repository:
 
 ```powershell
-git clone https://github.com/<your-account>/Antigravity-China-Access.git
-Set-Location .\Antigravity-China-Access
+git clone https://github.com/liuGuanYi-hub/antigravity_notTun.git
+Set-Location .\antigravity_notTun
 ```
 
-Copy and edit the configuration:
+The configuration ships with the repository; edit it if your port differs:
 
 ```powershell
-Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1
 notepad .\proxy-config.psd1
 ```
 

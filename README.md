@@ -14,6 +14,14 @@
 
 > 重要声明：本方案不用于解除 Google 官方地区限制、绕过账号资格审查，也不保证所有网络请求都一定会被代理。它只解决遵循这些环境变量的程序和网络组件的连接问题。请自行确认网络服务、账号和当地法律要求。
 
+## 0. 本机实测要点（2026-10-22，Windows 11 build 26100）
+
+这份仓库是 `liuGuanYi-hub/antigravity_notTun`，上游为 `Molly1116/Antigravity-China-Access`（MIT，保留原作者那条 commit）。以下三条是在本机把方案替换掉 TUN 之后验证得到的，按踩坑概率排序：
+
+1. **端口对不上就是白装。** `Start-Antigravity-Proxy.ps1` 在找不到 `proxy-config.psd1` 时静默回落到 `http://127.0.0.1:10808`，不报错、不提示，看上去装好了其实什么都没做。本机 HTTP 代理监听是 `127.0.0.1:7897`，所以这份仓库直接跟进了填好端口的 `proxy-config.psd1`（上游把它列进 `.gitignore`，这里改为跟踪，clone 即用）。装之前先 `netstat -ano | findstr :7897` 确认监听还在。
+2. **根因：Language Server 是 Go 二进制，只读环境变量、不读系统代理注册表。** `%LOCALAPPDATA%\Programs\Antigravity\resources\bin\language_server.exe` 里能查到 `net/http.ProxyFromEnvironment`、`net/http.envProxyFunc` 符号和 `HTTP_PROXY` 字面量。Go 不会去读 WinINET，所以在 `ProxyEnable=1`、系统代理已经指向 7897 的情况下，Electron 界面照常联网、Agent 仍然直连失败。这正是"只有 TUN 能兜住"的原因，也正是往进程环境里注变量就能顶替 TUN 的原因。
+3. **必须完全退出 Antigravity 再点快捷方式。** Antigravity 是单实例：旧进程还活着（包括托盘）时，新的启动只是把它唤回前台，环境变量进不去，表现和"这方案没用"一模一样。验证前先确认任务管理器里没有 `Antigravity` 和 `language_server` 进程。
+
 ## 1. 原理
 
 启动链如下：
@@ -90,38 +98,31 @@ http://127.0.0.1:10808
 
 ## 4. 配置代理地址和端口
 
-复制示例配置：
-
-```powershell
-Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1
-```
-
-编辑 `proxy-config.psd1`：
+本仓库已经把可用的 `proxy-config.psd1` 直接提交进版本控制，clone 下来就在，不需要复制示例：
 
 ```powershell
 @{
-    ProxyUrl = 'http://127.0.0.1:10808'
+    ProxyUrl = 'http://127.0.0.1:7897'
     NoProxy = 'localhost,127.0.0.1,::1'
 }
 ```
 
-只需要修改 `ProxyUrl`。推荐使用本机无认证代理监听器，不要把代理账号、密码或令牌提交到 GitHub。
+换机器时通常只需要改 `ProxyUrl`。推荐使用本机无认证代理监听器，不要把代理账号、密码或令牌提交到 GitHub。
 
-如果没有 `proxy-config.psd1`，启动脚本会使用 `http://127.0.0.1:10808` 作为默认值。
+`proxy-config.example.psd1` 只作参考。**不要执行 `Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1`** —— 那会把已提交的真实端口覆盖回示例值，等于把第 0 节那个坑亲手装回去。若 `proxy-config.psd1` 缺失，启动脚本静默使用 `http://127.0.0.1:10808`。
 
 ## 5. 安装项目
 
-可以下载 Release 压缩包，也可以克隆仓库：
+本仓库没有发布 Release 压缩包，请直接克隆：
 
 ```powershell
-git clone https://github.com/<你的账号>/Antigravity-China-Access.git
-Set-Location .\Antigravity-China-Access
+git clone https://github.com/liuGuanYi-hub/antigravity_notTun.git
+Set-Location .\antigravity_notTun
 ```
 
-然后复制并编辑配置文件：
+配置文件已随仓库提交，端口不同就直接编辑：
 
 ```powershell
-Copy-Item .\proxy-config.example.psd1 .\proxy-config.psd1
 notepad .\proxy-config.psd1
 ```
 
